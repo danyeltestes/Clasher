@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CLASHER - Royale Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --royale-blue: #003DA5;
+            --royale-red: #DC143C;
+            --royale-gold: #FFD700;
+            --royale-green: #709f1d;
+            --royale-purple: #a335ee;
+            --bg-main: #f1f5f9;
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-main); 
+            color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+            /* Fundo com Coroa Carmesim Transparente */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='%23DC143C' fill-opacity='0.03'%3E%3Cpath d='m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z'/%3E%3C/svg%3E");
+            background-attachment: fixed;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        
+        .main-container {
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: calc(100vh - 150px);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .card-royale {
+            background: white;
+            border-radius: 1.5rem;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 4px 15px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        input, textarea {
+            background-color: #ffffff !important;
+            border: 2px solid #e2e8f0 !important;
+            color: #1e293b !important;
+        }
+        input:focus, textarea:focus {
+            border-color: var(--royale-blue) !important;
+            outline: none;
+        }
+
+        input[type="datetime-local"] {
+            color: #1e293b !important;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .modal-open { overflow: hidden; position: fixed; width: 100%; }
+        .status-badge { font-size: 8px; font-weight: 900; letter-spacing: 0.05em; padding: 4px 10px; border-radius: 99px; }
+        
+        .bg-gradient-royale {
+            background: linear-gradient(135deg, var(--royale-blue) 0%, #002b75 100%);
+        }
+
+        .btn-active-anim {
+            transition: transform 0.1s ease, filter 0.1s ease;
+        }
+        .btn-active-anim:active {
+            transform: scale(0.92);
+            filter: brightness(1.2);
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        .btn-start-game {
+            position: relative;
+            overflow: hidden;
+            background-color: var(--royale-blue);
+        }
+        .btn-start-game::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: skewX(-20deg);
+            animation: shine 3s infinite;
+        }
+
+        .bubble-admin {
+            background: #dbeafe;
+            color: var(--royale-blue);
+            align-self: flex-end;
+            border-radius: 15px 15px 4px 15px;
+            padding: 10px 14px;
+        }
+        .bubble-player {
+            background: #f1f5f9;
+            color: #475569;
+            align-self: flex-start;
+            border-radius: 15px 15px 15px 4px;
+            padding: 10px 14px;
+        }
+        
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 800;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+        }
+
+        #warning-alert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #be123c;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 900;
+            z-index: 2000;
+            display: none;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.4);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            border: 2px solid #fb7185;
+            animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes slideDown {
+            from { top: -100px; opacity: 0; }
+            to { top: 20px; opacity: 1; }
+        }
+
+        .timer-glow {
+            animation: timerPulse 2s infinite;
+        }
+        @keyframes timerPulse {
+            0% { opacity: 1; text-shadow: 0 0 0px var(--royale-blue); }
+            50% { opacity: 0.7; text-shadow: 0 0 8px rgba(0, 61, 165, 0.4); }
+            100% { opacity: 1; text-shadow: 0 0 0px var(--royale-blue); }
+        }
+
+        .loading-media {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            border-top-color: var(--royale-blue);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .active-pulse-card {
+            border-color: var(--royale-blue) !important;
+            box-shadow: 0 0 20px rgba(0, 61, 165, 0.2);
+            animation: cardPulse 2s infinite;
+        }
+
+        @keyframes cardPulse {
+            0% { border-color: #3b82f6; }
+            50% { border-color: #60a5fa; }
+            100% { border-color: #3b82f6; }
+        }
+    </style>
+</head>
+<body class="selection:bg-blue-200">
+
+    <!-- TOAST & WARNINGS -->
+    <div id="toast">Copiado!</div>
+    <div id="warning-alert">AVISO</div>
+
+    <!-- TELA DE CARREGAMENTO -->
+    <div id="loader" class="fixed inset-0 bg-white z-[200] flex items-center justify-center">
+        <div class="text-center">
+            <div class="w-12 h-12 border-4 border-[var(--royale-blue)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p class="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Sincronizando Banco...</p>
+        </div>
+    </div>
+
+    <!-- TELA DE LOGIN -->
+    <div id="view-login" class="min-h-screen flex flex-col items-center justify-center p-6 bg-white hidden">
+        <div class="w-full max-w-xs text-center">
+            <div class="inline-block bg-gradient-royale p-5 rounded-[2rem] mb-6 shadow-2xl rotate-3">
+                <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h1 class="text-5xl font-black italic tracking-tighter leading-none mb-1 text-slate-900 uppercase">Clasher</h1>
+            <p class="text-blue-600 text-[10px] font-black uppercase tracking-[0.4em] italic mb-10 version-text">VERSION</p>
+            
+            <div class="bg-slate-50 p-8 rounded-[3rem] border border-slate-200 shadow-xl space-y-5">
+                <div class="text-left">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-3 mb-1 block">Email</label>
+                    <input type="email" id="input-email" placeholder="Email" class="w-full p-4 rounded-2xl outline-none text-sm font-bold shadow-sm">
+                </div>
+                <div class="text-left">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-3 mb-1 block">Senha</label>
+                    <input type="password" id="input-password" placeholder="Senha" class="w-full p-4 rounded-2xl outline-none text-sm font-bold shadow-sm">
+                </div>
+                <button id="btn-login" class="w-full bg-[var(--royale-blue)] py-5 rounded-[2rem] font-black text-lg text-white btn-active-anim shadow-lg shadow-blue-900/20 uppercase mt-4">Conectar</button>
+                <p id="login-error" class="text-red-500 text-[9px] font-black uppercase hidden mt-2 text-center">Acesso Negado</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP PRINCIPAL -->
+    <div id="view-app" class="hidden min-h-screen">
+        
+        <!-- HEADER ROYALE -->
+        <header class="p-4 bg-gradient-royale text-white flex justify-between items-center sticky top-0 z-50 shadow-lg">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="changeView('player')">
+                <div class="bg-white/20 p-2 rounded-xl backdrop-blur-sm border border-white/30">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black italic leading-none tracking-tighter">CLASHER</h1>
+                    <p class="text-[8px] text-blue-200 font-bold tracking-widest uppercase version-text">VERSION</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="changeView('notificacoes')" class="relative p-2.5 bg-white/10 rounded-full flex items-center justify-center border border-white/20 btn-active-anim">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <span id="notif-count" class="absolute -top-1 -right-1 bg-rose-500 text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-blue-900 hidden animate-bounce">0</span>
+                </button>
+                
+                <button id="role-toggle" onclick="toggleRole()" class="px-4 py-2 bg-[var(--royale-gold)] text-blue-900 rounded-xl text-[10px] font-black uppercase tracking-tighter shadow-inner transition-all btn-active-anim">JOGADOR</button>
+            </div>
+        </header>
+
+        <!-- NAVEGAÇÃO RÁPIDA -->
+        <div id="nav-tabs" class="flex bg-white border-b border-slate-200 px-4 py-2 sticky top-[73px] z-40 shadow-sm overflow-x-auto scrollbar-hide gap-4">
+            <button onclick="changeView('player')" class="flex items-center gap-1.5 shrink-0 px-2 py-1">
+                <div class="w-1.5 h-1.5 rounded-full bg-blue-600 shadow-[0_0_5px_rgba(30,64,175,0.5)]" id="dot-active"></div>
+                <span class="text-[10px] font-black uppercase text-slate-400" id="label-active">Pedidos Ativos</span>
+            </button>
+            <button onclick="changeView('concluidas')" class="flex items-center gap-1.5 shrink-0 px-2 py-1">
+                <div class="w-1.5 h-1.5 rounded-full bg-slate-300" id="dot-history"></div>
+                <span class="text-[10px] font-black uppercase text-slate-400" id="label-history">Concluídas</span>
+            </button>
+        </div>
+
+        <main class="p-4 main-container" id="app-content">
+            <!-- CONTEÚDO DINÂMICO -->
+        </main>
+
+    </div>
+
+    <!-- MODAL CONTAINER -->
+    <div id="modal-container" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 overflow-y-auto"></div>
+
+    <!-- SCRIPTS -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, updateDoc, deleteDoc, Timestamp, setDoc, writeBatch, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // --- CONFIGURAÇÃO ---
+        const VERSION = "CLA.21.01#1";
+        const DATA_ID = 'dw-store-clasher-prod';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAdoX-ee3QScnt3avIccXUAYTDr_pw6F9M",
+            authDomain: "clasher-c4ba1.firebaseapp.com",
+            projectId: "clasher-c4ba1",
+            storageBucket: "clasher-c4ba1.firebasestorage.app",
+            messagingSenderId: "126858834441",
+            appId: "1:126858834441:web:608a3aca40ef4614a87ed8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let state = {
+            user: null,
+            view: 'player',
+            role: 'player', 
+            metas: [],
+            notificacoes: [],
+            tags: [],
+            historico: [],
+            config: { 
+                royaleApiUrl: "https://royaleapi.com/player/",
+                discordWebhook: "https://discord.com/api/webhooks/1463273672193081578/-rxg6dP-sn-l_Am4xNs62z618gG8JlDbT3Aqo58tRSj8EfegH3_tMvykhqDjGzHvn9ks"
+            },
+            selectedIcons: ['trophy'],
+            loading: false
+        };
+
+        // UI Startup
+        document.querySelectorAll('.version-text').forEach(el => el.innerText = VERSION);
+
+        // --- INICIALIZAÇÃO DE AUTH ---
+        onAuthStateChanged(auth, user => {
+            const loader = document.getElementById('loader');
+            if (user) {
+                state.user = user;
+                document.getElementById('view-login').classList.add('hidden');
+                document.getElementById('view-app').classList.remove('hidden');
+                startSync();
+                setTimeout(() => loader.classList.add('hidden'), 500);
+            } else {
+                document.getElementById('view-app').classList.add('hidden');
+                document.getElementById('view-login').classList.remove('hidden');
+                loader.classList.add('hidden');
+            }
+        });
+
+        // --- DISCORD WEBHOOK ---
+        async function notifyDiscord(data) {
+            if(!state.config.discordWebhook) return;
+            const payload = typeof data === 'string' ? { content: `📢 **[CLASHER LOG]**\n${data}` } : data;
+            try {
+                await fetch(state.config.discordWebhook, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (e) { console.error("Discord error", e); }
+        }
+
+        function generateDiscordEmbed(title, color, meta, extraInfo = "") {
+            return {
+                embeds: [{
+                    title: `${title}`,
+                    color: color,
+                    fields: [
+                        { name: "👤 Cliente", value: meta.cliente || "Não informado", inline: true },
+                        { name: "🎮 Nick", value: meta.nick || "Não informado", inline: true },
+                        { name: "🏷️ Tag CR", value: meta.tag || "N/A", inline: true },
+                        { name: "📧 Email", value: meta.email || "N/A", inline: false },
+                        { name: "🏆 Meta", value: meta.metaDesc || "N/A", inline: false },
+                        { name: "💰 Valor", value: meta.valor || "R$ 0,00", inline: true },
+                        { name: "🆔 Pedido", value: meta.pedido || "N/A", inline: true }
+                    ],
+                    description: extraInfo,
+                    footer: { text: `Clasher Manager • ${VERSION}` },
+                    timestamp: new Date().toISOString()
+                }]
+            };
+        }
+
+        // --- SINCRONIZAÇÃO FIREBASE ---
+        function startSync() {
+            onSnapshot(query(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'metas')), (snap) => {
+                state.metas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                state.metas.sort((a,b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+                render();
+            });
+
+            onSnapshot(query(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'notificacoes')), (snap) => {
+                state.notificacoes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                state.notificacoes.sort((a,b) => b.timestamp?.toMillis() - a.timestamp?.toMillis());
+                render();
+            });
+
+            onSnapshot(query(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'historico_servico')), (snap) => {
+                state.historico = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                state.historico.sort((a,b) => b.end?.toMillis() - a.end?.toMillis());
+                render();
+            });
+
+            onSnapshot(query(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'tags')), (snap) => {
+                state.tags = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                render();
+            });
+
+            onSnapshot(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'config', 'general'), (snap) => {
+                if(snap.exists()) state.config = { ...state.config, ...snap.data() };
+                render();
+            });
+
+            // Timer Updater
+            setInterval(() => {
+                const activeTimers = document.querySelectorAll('[data-session-start]');
+                activeTimers.forEach(el => {
+                    const startVal = el.dataset.sessionStart;
+                    if(!startVal || startVal === "undefined") return;
+                    const start = parseInt(startVal);
+                    const now = Date.now();
+                    const diff = now - start;
+                    el.innerText = formatDuration(diff);
+                });
+            }, 1000);
+        }
+
+        function formatDuration(ms) {
+            const totalSec = Math.floor(ms / 1000);
+            const h = Math.floor(totalSec / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // --- NAVEGAÇÃO ---
+        window.changeView = (newView) => {
+            state.view = newView;
+            render();
+        };
+
+        window.toggleRole = () => {
+            state.role = state.role === 'admin' ? 'player' : 'admin';
+            const btn = document.getElementById('role-toggle');
+            btn.innerText = state.role === 'admin' ? 'GERENTE' : 'JOGADOR';
+            btn.className = state.role === 'admin' 
+                ? 'px-4 py-2 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase tracking-tighter shadow-lg btn-active-anim'
+                : 'px-4 py-2 bg-[var(--royale-gold)] text-blue-900 rounded-xl text-[10px] font-black uppercase tracking-tighter shadow-inner transition-all btn-active-anim';
+            render();
+        };
+
+        // --- RENDERIZADOR ---
+        function render() {
+            const container = document.getElementById('app-content');
+            if(!container) return;
+
+            const listNotif = state.role === 'admin' ? state.notificacoes : state.notificacoes.filter(n => n.important);
+            const notifPendingCount = listNotif.filter(n => !n.lida).length;
+            const notifBadge = document.getElementById('notif-count');
+            
+            if(notifPendingCount > 0) {
+                notifBadge.innerText = notifPendingCount;
+                notifBadge.classList.remove('hidden');
+            } else {
+                notifBadge.classList.add('hidden');
+            }
+
+            // Tabs Update
+            if(state.view === 'player' || state.view === 'admin') {
+                document.getElementById('dot-active').className = "w-1.5 h-1.5 rounded-full bg-blue-600 shadow-[0_0_8px_#2563eb]";
+                document.getElementById('label-active').className = "text-[10px] font-black uppercase text-blue-700";
+                document.getElementById('dot-history').className = "w-1.5 h-1.5 rounded-full bg-slate-300";
+                document.getElementById('label-history').className = "text-[10px] font-black uppercase text-slate-400";
+                renderMainList(container);
+            } else if(state.view === 'concluidas') {
+                document.getElementById('dot-history').className = "w-1.5 h-1.5 rounded-full bg-emerald-600 shadow-[0_0_8px_#10b981]";
+                document.getElementById('label-history').className = "text-[10px] font-black uppercase text-emerald-700";
+                document.getElementById('dot-active').className = "w-1.5 h-1.5 rounded-full bg-slate-300";
+                document.getElementById('label-active').className = "text-[10px] font-black uppercase text-slate-400";
+                renderConcluidas(container);
+            } 
+            else if(state.view === 'notificacoes') renderNotifications(container);
+            else if(state.view === 'tags') renderTagManager(container);
+            else if(state.view === 'settings') renderSettings(container);
+            else if(state.view === 'reorder') renderReorder(container);
+            else if(state.view === 'historico_geral') renderHistoricoGeral(container);
+            else if(state.view === 'memory_manager') renderMemoryManager(container);
+        }
+
+        function renderMainList(container) {
+            const metasAtivas = state.metas.filter(m => m.status !== '✅ Concluído' && m.status !== '❌ Cancelada');
+            container.innerHTML = `
+                <div class="animate-in fade-in duration-300">
+                    <div class="mb-10 flex flex-col gap-3">
+                        ${state.role === 'admin' ? `
+                            <button onclick="openModal('register')" class="w-full bg-[var(--royale-blue)] text-white py-6 rounded-3xl font-black text-xl shadow-xl shadow-blue-900/10 uppercase italic flex items-center justify-center gap-3 btn-active-anim">
+                                REGISTRAR META
+                            </button>
+                        ` : ''}
+                        
+                        <button onclick="changeView('historico_geral')" class="w-full bg-white border-2 border-slate-200 py-4 rounded-2xl font-black text-[10px] uppercase text-blue-900 shadow-sm btn-active-anim flex items-center justify-center gap-2">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            HISTÓRICO DE SERVIÇO
+                        </button>
+
+                        ${state.role === 'admin' ? `
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="changeView('tags')" class="bg-white border-2 border-slate-200 py-3.5 rounded-2xl font-black text-[10px] uppercase text-blue-700 shadow-sm btn-active-anim">GERIR TAGS</button>
+                                <button onclick="changeView('settings')" class="bg-white border-2 border-slate-200 py-3.5 rounded-2xl font-black text-[10px] uppercase text-slate-500 italic shadow-sm btn-active-anim">AJUSTES</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="space-y-6">
+                        ${metasAtivas.length === 0 ? `<div class="text-center py-20 text-slate-300 text-xs font-bold italic">Nenhum pedido ativo no momento.</div>` : ''}
+                        ${metasAtivas.map(m => generateCardHtml(m)).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderHistoricoGeral(container) {
+            container.innerHTML = `
+                <div class="animate-in slide-in-from-bottom-4 duration-300">
+                    <div class="flex justify-between items-center mb-6">
+                        <button onclick="changeView('player')" class="text-slate-400 flex items-center gap-1 text-[10px] font-black italic">VOLTAR</button>
+                        <h2 class="text-lg font-black italic uppercase text-slate-900">HISTÓRICO GERAL</h2>
+                    </div>
+                    <div class="space-y-4 mb-20">
+                        ${state.historico.length === 0 ? `<p class="text-center text-slate-300 py-20 italic font-bold">Nenhum registro encontrado.</p>` : ''}
+                        ${state.historico.map(h => `
+                            <div class="bg-white p-5 card-royale border-l-4 border-l-blue-600 shadow-sm relative">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-[11px] font-black text-slate-900 uppercase italic tracking-tighter truncate">${h.metaDesc}</p>
+                                        <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">${h.nick || 'Sem Nick'}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[12px] font-black text-blue-700 italic leading-none">${h.durationStr}</p>
+                                        <p class="text-[7px] text-slate-300 font-bold uppercase mt-1">Tempo Total</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 border-t border-slate-50 pt-3 mt-3">
+                                    <div><p class="text-[7px] font-black text-slate-400 uppercase">Início</p><p class="text-[9px] font-bold text-slate-600">${new Date(h.start?.toMillis()).toLocaleString()}</p></div>
+                                    <div class="text-right"><p class="text-[7px] font-black text-slate-400 uppercase">Fim</p><p class="text-[9px] font-bold text-slate-600">${new Date(h.end?.toMillis()).toLocaleString()}</p></div>
+                                </div>
+                                ${state.role === 'admin' ? `
+                                    <button onclick="deleteHistorico('${h.id}')" class="absolute top-2 right-2 p-2 text-slate-200 hover:text-red-500">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMemoryManager(container) {
+            const docCount = state.metas.length + state.notificacoes.length + state.historico.length + state.tags.length;
+            const chatCount = state.metas.reduce((acc, m) => acc + (m.chat?.length || 0), 0);
+            container.innerHTML = `
+                <div class="animate-in slide-in-from-bottom-4 duration-500">
+                    <button onclick="changeView('settings')" class="text-slate-400 flex items-center gap-1 text-[10px] font-black italic">VOLTAR</button>
+                    <h2 class="text-xl font-black italic mb-2 uppercase text-slate-900 tracking-tighter text-center">Gestão de Memória</h2>
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm"><p class="text-[8px] font-black text-slate-400 uppercase italic">Documentos</p><p class="text-2xl font-black text-slate-900">${docCount}</p></div>
+                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm"><p class="text-[8px] font-black text-slate-400 uppercase italic">Mensagens Chat</p><p class="text-2xl font-black text-blue-700">${chatCount}</p></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-[3rem] border border-slate-200 space-y-3 shadow-xl">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 italic">Limpezas Rápidas</p>
+                        <button onclick="confirmCleanup('notificacoes_lidas')" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl flex items-center justify-between btn-active-anim"><span class="text-[10px] font-black uppercase text-slate-600">Apagar Notificações Lidas</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="text-slate-300"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+                        <button onclick="confirmCleanup('historico')" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl flex items-center justify-between btn-active-anim"><span class="text-[10px] font-black uppercase text-slate-600">Limpar Histórico de Serviço</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="text-slate-300"><polyline points="12 6 12 12 16 14"/></svg></button>
+                        <button onclick="confirmCleanup('chats')" class="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl flex items-center justify-between btn-active-anim"><span class="text-[10px] font-black uppercase text-slate-600">Zerar Todos os Chats</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="text-slate-300"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderNotifications(container) {
+            const list = state.role === 'admin' ? state.notificacoes : state.notificacoes.filter(n => n.important);
+            const novas = list.filter(n => !n.lida);
+            const antigas = list.filter(n => n.lida);
+            container.innerHTML = `
+                <div class="animate-in slide-in-from-bottom-4 duration-300">
+                    <div class="flex justify-between items-center mb-6">
+                        <button onclick="changeView('player')" class="text-slate-400 flex items-center gap-1 text-[10px] font-black italic">VOLTAR</button>
+                        <h2 class="text-lg font-black italic uppercase text-slate-900">MENSAGENS</h2>
+                        <button onclick="clearAllNotifs()" class="text-[9px] bg-[var(--royale-blue)] text-white px-3 py-2 rounded-xl font-black shadow-md uppercase btn-active-anim">Lido</button>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="space-y-3">
+                            ${novas.map(n => `
+                                <div class="p-5 card-royale border-l-4 border-l-blue-600 shadow-sm flex gap-4 ${n.type === 'concluido' ? 'border-l-emerald-500 bg-emerald-50' : n.type === 'cancelado' ? 'border-l-rose-500 bg-rose-50' : ''}">
+                                    <div class="shrink-0 w-2 h-2 rounded-full ${n.type === 'concluido' ? 'bg-emerald-500' : n.type === 'cancelado' ? 'bg-rose-500' : 'bg-blue-600'}"></div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-xs font-bold text-slate-900 leading-snug break-words uppercase">${n.msg}</p>
+                                        <p class="text-[9px] text-slate-400 mt-2 font-bold uppercase tracking-tighter">${new Date(n.timestamp?.toMillis()).toLocaleString()}</p>
+                                    </div>
+                                    <button onclick="markAsRead('${n.id}')" class="p-1 text-slate-300 hover:text-blue-600 btn-active-anim">
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="space-y-2 opacity-50">
+                            ${antigas.map(n => `<div class="p-3 bg-white border border-slate-200 rounded-2xl flex justify-between items-center shadow-sm"><p class="text-[10px] font-bold text-slate-500 flex-1 truncate mr-4 uppercase">${n.msg}</p><button onclick="deleteNotif('${n.id}')" class="text-slate-300 hover:text-rose-600 btn-active-anim"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button></div>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderConcluidas(container) {
+            const list = state.metas.filter(m => m.status === '✅ Concluído' || m.status === '❌ Cancelada');
+            container.innerHTML = `
+                <div class="animate-in fade-in duration-300">
+                    <div class="flex justify-between items-center mb-6 text-emerald-700">
+                        <button onclick="changeView('player')" class="text-slate-400 text-[10px] font-black italic uppercase">VOLTAR</button>
+                        <h2 class="text-lg font-black italic uppercase">ARQUIVADAS</h2>
+                    </div>
+                    <div class="space-y-4">${list.length === 0 ? `<p class="text-center text-slate-400 py-20 italic font-bold">Arquivo limpo.</p>` : ''}${list.map(m => generateCardHtml(m, true)).join('')}</div>
+                </div>
+            `;
+        }
+
+        function renderTagManager(container) {
+            container.innerHTML = `
+                <div class="animate-in slide-in-from-bottom-4 duration-500">
+                    <button onclick="changeView('admin')" class="text-slate-500 flex items-center gap-1 text-[10px] font-bold mb-6 italic">VOLTAR</button>
+                    <h2 class="text-xl font-black italic mb-6 uppercase tracking-tighter text-center">Etiquetas WC</h2>
+                    <div class="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-xl mb-8">
+                        <div class="flex flex-col gap-3">
+                            <input type="text" id="new-tag-input" placeholder="Ex: Conta Difícil" class="w-full rounded-2xl px-5 py-4 text-sm font-bold shadow-sm">
+                            <button onclick="saveTag()" class="w-full bg-[var(--royale-blue)] text-white py-4 rounded-2xl font-black text-sm uppercase italic shadow-lg btn-active-anim">CRIAR ETIQUETA</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 gap-2">${state.tags.map(t => `<div class="bg-white p-4 rounded-2xl border border-slate-200 flex justify-between items-center shadow-sm"><span class="text-sm font-bold text-blue-700 tracking-wide">#${t.name}</span><button onclick="deleteTag('${t.id}')" class="text-slate-700 hover:text-red-500 p-2 btn-active-anim"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button></div>`).join('')}</div>
+                </div>
+            `;
+        }
+
+        function renderSettings(container) {
+            container.innerHTML = `
+                <div class="animate-in slide-in-from-bottom-4 duration-500">
+                    <button onclick="changeView('admin')" class="text-slate-400 flex items-center gap-1 text-[10px] font-black italic">VOLTAR</button>
+                    <h2 class="text-xl font-black italic mb-6 uppercase tracking-tighter text-center">Ajustes</h2>
+                    <div class="space-y-4">
+                        <button onclick="changeView('reorder')" class="w-full bg-[var(--royale-blue)] text-white p-5 rounded-[2.2rem] flex items-center justify-between shadow-lg btn-active-anim italic"><div class="text-left"><p class="font-black text-sm uppercase tracking-tighter">Organizar Fila</p><p class="text-[7px] font-bold text-blue-200 uppercase tracking-widest italic">Ajustar prioridades de subida</p></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="-rotate-90"><polyline points="6 9 12 15 18 9"/></svg></button>
+                        <button onclick="changeView('memory_manager')" class="w-full bg-slate-900 text-white p-5 rounded-[2.2rem] flex items-center justify-between shadow-lg btn-active-anim italic"><div class="text-left"><p class="font-black text-sm uppercase tracking-tighter">Gerenciar Memória</p><p class="text-[7px] font-bold text-blue-400 uppercase tracking-widest italic">Limpar banco e histórico</p></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="text-blue-400"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></button>
+                        <div class="bg-white p-6 rounded-[3rem] border border-slate-200 space-y-4 shadow-xl">
+                            <div><label class="text-[9px] font-black text-blue-700 uppercase ml-2 italic">Discord Webhook</label><input type="text" id="discord-url-input" class="w-full rounded-2xl p-4 mt-1 text-[10px] font-mono shadow-sm outline-none" value="${state.config.discordWebhook || ''}"></div>
+                            <div><label class="text-[9px] font-black text-slate-400 uppercase ml-2 italic">RoyaleAPI URL</label><input type="text" id="api-url-input" class="w-full rounded-2xl p-4 mt-1 text-[10px] font-mono shadow-sm outline-none" value="${state.config.royaleApiUrl}"></div>
+                            <button onclick="saveAllConfigs()" class="w-full bg-[var(--royale-blue)] text-white py-5 rounded-[2rem] font-black uppercase text-[10px] tracking-widest shadow-md btn-active-anim italic">ATUALIZAR SISTEMA</button>
+                        </div>
+                        <button onclick="signOut(auth)" class="w-full py-4 text-[var(--royale-red)] font-black text-[10px] uppercase tracking-widest opacity-40 hover:opacity-100 transition-all italic underline btn-active-anim">Encerrar Sessão</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderReorder(container) {
+            const list = state.metas.filter(m => m.status !== '✅ Concluído' && m.status !== '❌ Cancelada');
+            container.innerHTML = `
+                <div class="animate-in fade-in duration-300">
+                    <button onclick="changeView('settings')" class="text-slate-400 flex items-center gap-1 text-[10px] font-bold mb-6 italic">VOLTAR</button>
+                    <h2 class="text-xl font-black italic mb-2 uppercase text-slate-900 tracking-tighter">Prioridade de Fila</h2>
+                    <div class="space-y-2 mb-28">${list.map((m, idx) => `<div class="bg-white border-2 border-slate-100 p-4 rounded-2xl flex items-center justify-between shadow-sm"><div class="min-w-0 mr-4"><p class="text-[11px] font-black text-blue-900 truncate uppercase tracking-tighter">${m.email}</p><p class="text-[8px] text-slate-400 font-bold truncate uppercase tracking-widest">${m.cliente} ${m.nick ? `(${m.nick})` : ''}</p></div><div class="flex gap-1 shrink-0"><button onclick="moveItem(${idx}, -1)" class="p-3 bg-slate-100 rounded-xl text-blue-600 ${idx === 0 ? 'opacity-10 pointer-events-none' : 'active:scale-90 shadow-sm btn-active-anim'}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="rotate-180"><polyline points="6 9 12 15 18 9"/></svg></button><button onclick="moveItem(${idx}, 1)" class="p-3 bg-slate-100 rounded-xl text-blue-600 ${idx === list.length - 1 ? 'opacity-10 pointer-events-none' : 'active:scale-90 shadow-sm btn-active-anim'}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg></button></div></div>`).join('')}</div>
+                    <div class="fixed bottom-6 left-4 right-4 max-w-md mx-auto z-[90]"><button onclick="confirmOrder()" class="w-full bg-emerald-600 text-white py-5 rounded-[2.5rem] font-black italic shadow-2xl uppercase tracking-widest text-sm btn-active-anim">CONCLUIR ORDEM</button></div>
+                </div>
+            `;
+        }
+
+        function generateCardHtml(meta, isHistory = false) {
+            const start = meta.createdAt?.toMillis() || Date.now();
+            const end = start + (7 * 24 * 60 * 60 * 1000);
+            const now = Date.now();
+            const diff = end - now;
+            const progress = isHistory ? 0 : Math.max(0, Math.min(100, (diff / (7 * 24 * 60 * 60 * 1000)) * 100));
+            const color = progress > 50 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : progress > 20 ? 'bg-amber-400' : 'bg-rose-600 animate-pulse';
+            const isJogando = meta.status === '🎮 Jogando';
+            const isCancelada = meta.status === '❌ Cancelada';
+
+            return `
+                <div id="card-${meta.id}" class="card-royale relative overflow-hidden flex flex-col w-full box-border border-2 transition-all ${isJogando ? 'active-pulse-card' : ''} ${meta.status === '✅ Concluído' ? 'border-emerald-200' : isCancelada ? 'border-rose-200 grayscale opacity-60 scale-95' : isJogando ? 'border-blue-500 shadow-xl scale-[1.01]' : 'border-slate-200 shadow-sm'}">
+                    ${!isHistory ? `<div class="absolute top-0 left-0 w-full h-1 bg-slate-100"><div class="h-full transition-all duration-1000 ${color}" style="width: ${progress}%"></div></div>` : ''}
+                    <div class="p-5 pt-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-2"><span class="status-badge shadow-sm ${meta.status === '✅ Concluído' ? 'bg-emerald-500 text-white' : isCancelada ? 'bg-[var(--royale-red)] text-white' : isJogando ? 'bg-[var(--royale-blue)] text-white shadow-md' : 'bg-slate-100 text-slate-500 border border-slate-200'}">${meta.status}</span><button onclick="toggleCardRaw('${meta.id}')" class="p-1.5 text-slate-300 hover:text-slate-600 bg-slate-50 rounded-lg border border-slate-100 btn-active-anim"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="6 9 12 15 18 9"/></svg></button></div>
+                                <div class="flex items-center gap-2 flex-wrap mb-1"><div class="flex gap-1">${(meta.iconTypes || ['trophy']).map(ic => generateIconHtml(ic)).join('')}</div><h3 class="text-[13px] font-black text-slate-900 tracking-tighter uppercase break-words italic leading-tight">${meta.metaDesc}</h3></div>
+                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 truncate">Cliente: ${meta.cliente} ${meta.nick ? `(${meta.nick})` : ''}</p>
+                            </div>
+                            <div class="text-right shrink-0"><p class="text-[16px] font-black text-blue-800 tracking-tighter italic leading-none">${meta.valor}</p>${!isHistory ? `<p class="text-[8px] font-black mt-2 font-mono uppercase text-slate-300 tracking-tighter">⌛ ${Math.floor(diff / 86400000)}D ${Math.floor((diff % 86400000) / 3600000)}H</p>` : ''}</div>
+                        </div>
+                        ${isJogando ? `<div class="mb-4 bg-blue-50 border-2 border-blue-200 rounded-3xl p-4 flex items-center justify-between animate-in slide-in-from-top-2 shadow-inner"><div class="flex items-center gap-3"><div class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse shadow-[0_0_8px_var(--royale-blue)]"></div><span class="text-[10px] font-black text-blue-700 uppercase italic tracking-widest">Tempo em Jogo</span></div><span class="text-xl font-black text-blue-900 font-mono timer-glow" data-session-start="${meta.sessionStart}">00:00:00</span></div>` : ''}
+                        <div id="raw-${meta.id}" class="mb-4 hidden animate-in slide-in-from-top-3"><div class="bg-slate-50 rounded-2xl p-4 border border-slate-100"><pre class="text-[9px] font-mono text-slate-400 whitespace-pre-wrap">${meta.raw}</pre></div></div>
+                        ${meta.aviso ? `<div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl text-[9px] mb-4 text-rose-700 font-black italic shadow-inner">${meta.aviso}</div>` : ''}
+                        <div class="flex flex-wrap gap-1.5 mb-4">${(meta.appliedTags || []).map(t => `<span class="bg-blue-600 text-white text-[7px] font-black px-2 py-0.5 rounded border border-blue-700 uppercase italic shadow-sm">#${t}</span>`).join('')}</div>
+                        <div class="grid grid-cols-1 gap-2 mb-5"><div class="bg-blue-50 p-3 rounded-[1.2rem] flex justify-between items-center border border-blue-100 shadow-sm"><div class="flex-1 mr-3 min-w-0"><p class="text-blue-700 font-black uppercase text-[7px] mb-0.5 tracking-widest italic">Acesso Supercell</p><p class="font-black text-blue-900 text-[11px] truncate tracking-tighter">${meta.email}</p></div><button onclick="copyToClipboard('${meta.email}')" class="p-3 bg-[var(--royale-blue)] text-white rounded-xl shadow-lg btn-active-anim"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div></div>
+                        <div class="flex gap-2">
+                            <button onclick="openChat('${meta.id}')" class="flex-1 bg-[var(--royale-gold)] text-blue-900 py-3.5 rounded-2xl font-black text-[10px] uppercase shadow-md flex items-center justify-center gap-2 italic btn-active-anim"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>CHAT ${meta.chat?.length > 0 ? `<span class="bg-blue-900 text-white px-2 py-0.5 rounded-full text-[8px]">${meta.chat.length}</span>` : ''}</button>
+                            <button onclick="openRoyaleApi('${meta.tag}')" class="bg-white border-2 border-slate-200 p-3.5 rounded-2xl text-blue-600 shadow-sm btn-active-anim"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+                        </div>
+                        ${!isHistory && state.role === 'player' ? `<div class="flex flex-col gap-2 mt-4"><div class="flex gap-2">${isJogando ? `<button onclick="stopGame('${meta.id}')" class="flex-[2] bg-rose-600 py-4 rounded-[1.8rem] font-black text-white text-[11px] uppercase shadow-lg btn-active-anim italic">PARAR JOGO</button>` : `<button onclick="startGame('${meta.id}')" class="flex-[2] btn-start-game py-4 rounded-[1.8rem] font-black text-white text-[11px] uppercase shadow-lg btn-active-anim italic">INICIAR JOGO</button>`}<button onclick="completeMeta('${meta.id}')" class="flex-1 bg-[var(--royale-green)] py-4 rounded-[1.8rem] font-black text-white text-[11px] uppercase shadow-lg btn-active-anim">CONCLUIR</button></div><button onclick="toggleTagPicker('${meta.id}')" class="w-full bg-white border-2 border-slate-200 py-3.5 rounded-2xl text-slate-400 font-black text-[9px] uppercase italic tracking-widest shadow-sm btn-active-anim">MARCAR SITUAÇÃO</button><div id="tag-picker-${meta.id}" class="hidden bg-slate-50 border border-slate-200 rounded-3xl p-3 mt-1 flex flex-wrap gap-2 animate-in fade-in zoom-in-95">${state.tags.map(t => `<button onclick="toggleTagOnMeta('${meta.id}', '${t.name}')" class="px-3 py-2 rounded-xl text-[8px] font-black uppercase border-2 btn-active-anim ${(meta.appliedTags || []).includes(t.name) ? 'bg-blue-600 border-blue-700 text-white shadow-md' : 'bg-white border-slate-200 text-slate-400'}">${t.name}</button>`).join('')}</div></div>` : ''}
+                        
+                        ${state.role === 'admin' ? `
+                            <div class="mt-8 flex flex-col gap-3 border-t border-slate-100 pt-5">
+                                <div class="flex flex-wrap gap-4 items-center justify-center uppercase font-black text-[9px] italic tracking-widest">
+                                    <button onclick="confirmRemoval('${meta.id}')" class="text-[var(--royale-red)] hover:text-rose-800 flex items-center gap-1.5 btn-active-anim"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg> APAGAR</button>
+                                    <button onclick="openModal('edit', '${meta.id}')" class="text-blue-700 hover:text-blue-900 flex items-center gap-1.5 uppercase italic btn-active-anim"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> EDITAR</button>
+                                    ${!isHistory ? `<button onclick="openModal('deadline', '${meta.id}')" class="text-slate-400 hover:text-slate-600 flex items-center gap-1.5 uppercase italic btn-active-anim"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> TEMPO</button>` : ''}
+                                    ${isHistory ? `<button onclick="reactivateMeta('${meta.id}')" class="text-emerald-600 flex items-center gap-1.5 uppercase italic shadow-sm btn-active-anim"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> REATIVAR</button>` : ''}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateIconHtml(type) {
+            const size = 14; const className = "text-[var(--royale-gold)] shadow-sm shrink-0";
+            switch(type) {
+                case 'shield': return `<svg class="${className}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+                case 'crown': return `<svg class="${className}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/></svg>`;
+                case 'arrows': return `<svg class="${className}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
+                default: return `<svg class="${className}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`;
+            }
+        }
+
+        window.openChat = (metaId) => {
+            const meta = state.metas.find(m => m.id === metaId);
+            const modal = document.getElementById('modal-container');
+            const chat = meta.chat || [];
+            modal.innerHTML = `<div class="bg-white w-full max-w-md h-[85vh] rounded-[3rem] p-8 border-2 border-slate-100 shadow-2xl flex flex-col box-border animate-in zoom-in-95 duration-200"><div class="flex justify-between items-center pb-5 border-b border-slate-100 shrink-0"><div class="min-w-0"><h3 class="text-sm font-black text-blue-900 uppercase italic truncate tracking-tighter">${meta.metaDesc}</h3><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest italic">Chat da Conta</p></div><button onclick="closeModal()" class="bg-slate-50 p-2.5 rounded-2xl text-slate-300 border border-slate-100 btn-active-anim"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div class="flex-1 overflow-y-auto py-6 space-y-4 flex flex-col scrollbar-hide" id="chat-scroller">${chat.length === 0 ? `<p class="text-center text-slate-200 py-20 text-[10px] font-black uppercase italic tracking-widest">Comece a digitar...</p>` : ''}${chat.map(msg => `<div class="max-w-[85%] flex flex-col shadow-sm ${msg.sender === state.role ? 'bubble-admin' : 'bubble-player'}"><p class="text-[8px] font-black uppercase mb-1 opacity-40 italic tracking-widest">${msg.sender === 'admin' ? 'Gerente' : 'Jogador'}</p><p class="text-xs font-bold leading-relaxed">${msg.text}</p><p class="text-[7px] font-black text-right mt-1 opacity-30 uppercase">${new Date(msg.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p></div>`).join('')}</div><div id="media-status" class="hidden text-center py-2 text-[9px] font-black text-blue-600 uppercase italic animate-pulse"><span class="loading-media mr-2"></span> Enviando mídia...</div><div class="pt-5 border-t border-slate-100 flex gap-2 shrink-0 items-center"><input type="file" id="media-input" class="hidden" accept="image/*,video/*" onchange="sendMediaMessage('${metaId}')"><button onclick="document.getElementById('media-input').click()" class="bg-slate-100 text-slate-400 p-4 rounded-[1.5rem] btn-active-anim shadow-sm shrink-0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button><input type="text" id="chat-input" class="flex-1 p-4 rounded-[1.5rem] text-xs font-bold shadow-inner border-2 border-slate-50 outline-none min-w-0" placeholder="Mensagem..."><button onclick="sendChatMessage('${metaId}')" class="bg-[var(--royale-blue)] text-white p-4 rounded-[1.5rem] shadow-xl btn-active-anim shrink-0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="22" y1="2" x2="11" y2="13"/><polyline points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div></div>`;
+            modal.classList.remove('hidden'); document.body.classList.add('modal-open');
+            const sc = document.getElementById('chat-scroller'); sc.scrollTop = sc.scrollHeight;
+        };
+
+        window.sendChatMessage = async (metaId) => {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim(); if(!text) return;
+            const metaRef = doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', metaId);
+            await updateDoc(metaRef, { chat: arrayUnion({ sender: state.role, text, time: Date.now() }) });
+            input.value = ''; openChat(metaId); 
+            const meta = state.metas.find(m => m.id === metaId);
+            notifyDiscord({
+                content: `💬 **NOVA MENSAGEM**`,
+                embeds: [{ title: `De: ${state.role === 'admin' ? 'Gerente' : 'Jogador'}`, description: text, color: state.role === 'admin' ? 3447003 : 15844367, fields: [{ name: "Conta", value: meta.metaDesc }], footer: { text: `Cliente: ${meta.cliente}` } }]
+            });
+        };
+
+        window.sendMediaMessage = async (metaId) => {
+            const fileInput = document.getElementById('media-input');
+            const file = fileInput.files[0]; if(!file || !state.config.discordWebhook) return;
+            const mediaStatus = document.getElementById('media-status');
+            mediaStatus.classList.remove('hidden');
+            const formData = new FormData(); formData.append('file', file);
+            formData.append('payload_json', JSON.stringify({ content: `📸 **MÍDIA ENVIADA**\nMeta: ${state.metas.find(m => m.id === metaId).metaDesc}\nCliente: ${state.metas.find(m => m.id === metaId).cliente}` }));
+            try {
+                const response = await fetch(state.config.discordWebhook, { method: 'POST', body: formData });
+                if(response.ok) {
+                    await updateDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', metaId), { chat: arrayUnion({ sender: state.role, text: "🖼️ [Mídia enviada ao Discord]", time: Date.now() }) });
+                    showToast("Enviado!");
+                }
+            } catch (e) { console.error(e); } finally { mediaStatus.classList.add('hidden'); fileInput.value = ''; openChat(metaId); }
+        };
+
+        window.showWarningAlert = (msg, targetCardId = null) => {
+            const alert = document.getElementById('warning-alert');
+            alert.innerText = msg;
+            alert.style.display = 'block';
+            
+            if(targetCardId) {
+                const card = document.getElementById(`card-${targetCardId}`);
+                if(card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.add('ring-4', 'ring-rose-500', 'ring-offset-2');
+                    setTimeout(() => card.classList.remove('ring-4', 'ring-rose-500', 'ring-offset-2'), 5000);
+                }
+            }
+
+            setTimeout(() => { alert.style.display = 'none'; }, 5000);
+        };
+
+        window.startGame = async (id) => {
+            // BLOQUEIO: Verificar se já existe meta ativa
+            const runningMeta = state.metas.find(m => m.status === '🎮 Jogando');
+            if(runningMeta && runningMeta.id !== id) {
+                showWarningAlert(`⚠️ VOCÊ JÁ TEM UMA META ATIVA!\nPare o jogo de [${runningMeta.nick || runningMeta.cliente}] para iniciar este.`, runningMeta.id);
+                return;
+            }
+
+            const m = state.metas.find(x => x.id === id);
+            await updateDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', id), { 
+                status: '🎮 Jogando', 
+                sessionStart: Date.now() 
+            });
+            
+            const msgLog = `🎮 INÍCIO: [${m.email}] - Cli: ${m.cliente} | Meta: ${m.metaDesc}`;
+            await addDoc(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'notificacoes'), { 
+                msg: msgLog, lida: false, timestamp: Timestamp.now(), important: true, type: 'normal' 
+            });
+
+            notifyDiscord(generateDiscordEmbed("🎮 INÍCIO DE SERVIÇO", 3447003, m, "O jogador iniciou a subida."));
+        };
+
+        window.stopGame = async (id) => {
+            const m = state.metas.find(x => x.id === id); 
+            const end = Date.now(); 
+            const start = m.sessionStart; 
+            
+            // Correção do Bug: Se não houver sessionStart, apenas limpa o status sem salvar histórico
+            if(start) {
+                const diff = end - start; 
+                const dur = formatDuration(diff);
+                await addDoc(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'historico_servico'), { 
+                    metaId: id, metaDesc: m.metaDesc, nick: m.nick, email: m.email, 
+                    start: Timestamp.fromMillis(start), end: Timestamp.fromMillis(end), 
+                    durationMs: diff, durationStr: dur 
+                });
+                
+                const msgLog = `⏱️ PAUSADO: [${m.email}] - Cli: ${m.cliente} | Duração: ${dur}`;
+                await addDoc(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'notificacoes'), { 
+                    msg: msgLog, lida: false, timestamp: Timestamp.now(), important: false, type: 'normal' 
+                });
+                notifyDiscord(generateDiscordEmbed("⏱️ SERVIÇO PAUSADO", 15844367, m, `Sessão encerrada.\n**Duração:** ${dur}`));
+            }
+
+            // Sempre limpa o status para evitar travamento
+            await updateDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', id), { 
+                status: '⏱️ Aguardando', 
+                sessionStart: null 
+            });
+        };
+
+        window.completeMeta = async (id) => {
+            const m = state.metas.find(x => x.id === id);
+            if(m.status === '🎮 Jogando') await stopGame(id);
+            await updateDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', id), { status: '✅ Concluído' });
+            
+            const msgLog = `✅ CONCLUÍDO: [${m.email}] - Cli: ${m.cliente} | Meta: ${m.metaDesc}`;
+            await addDoc(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'notificacoes'), { 
+                msg: msgLog, lida: false, timestamp: Timestamp.now(), important: true, type: 'concluido' 
+            });
+
+            notifyDiscord(generateDiscordEmbed("💎 SERVIÇO CONCLUÍDO", 3066993, m, "A meta foi finalizada."));
+        };
+
+        window.doRegister = async () => {
+            const raw = document.getElementById('reg-raw').value; const manual = document.getElementById('reg-manual').value; const dateStr = document.getElementById('reg-date').value; if(!raw.trim()) return;
+            const lines = raw.split('\n').map(l => l.trim()); const email = lines[0] || ''; const metaDesc = manual.trim() !== '' ? manual.trim() : (lines[1] || 'Indefinida');
+            const valM = raw.match(/\*R\$\s*([\d,.]+)\*/i); const cliM = raw.match(/Cliente:\s*(.*)/i); const nickM = raw.match(/Nick:\s*(.*)/i); const tagM = raw.match(/Tag:\s*(.*)/i); const pedM = raw.match(/N° do pedido:\s*\*?#?([a-zA-Z0-9]+)\*?/i);
+            const novaMeta = { email, metaDesc, valor: valM ? `R$ ${valM[1]}` : 'R$ 0,00', cliente: cliM ? cliM[1].trim() : 'Desconhecido', nick: nickM ? nickM[1].trim() : 'N/A', tag: tagM ? tagM[1].trim() : 'N/A', pedido: pedM ? `#${pedM[1]}` : '#?', aviso: lines.find(l => l.includes('⚠️')) || '', iconTypes: state.selectedIcons, status: '⏱️ Aguardando', appliedTags: [], createdAt: dateStr ? Timestamp.fromDate(new Date(dateStr)) : Timestamp.now(), sortOrder: Date.now(), chat: [], raw };
+            await addDoc(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'metas'), novaMeta);
+            
+            const msgLog = `🚀 REGISTRO: [${email}] - Cli: ${novaMeta.cliente} | Meta: ${metaDesc}`;
+            await addDoc(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'notificacoes'), { 
+                msg: msgLog, lida: false, timestamp: Timestamp.now(), important: true, type: 'normal' 
+            });
+
+            notifyDiscord(generateDiscordEmbed("🚀 NOVA META REGISTRADA", 10181046, novaMeta)); closeModal();
+        };
+
+        window.toggleTagOnMeta = async (metaId, tagName) => {
+            const m = state.metas.find(x => x.id === metaId); let tags = [...(m.appliedTags || [])];
+            if(tags.includes(tagName)) tags = tags.filter(t => t !== tagName);
+            else { 
+                tags.push(tagName); 
+                const msgLog = `🏷️ TAG #${tagName}: [${m.email}] - Cli: ${m.cliente}`;
+                await addDoc(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'notificacoes'), { 
+                    msg: msgLog, lida: false, timestamp: Timestamp.now(), important: true, type: 'normal' 
+                });
+                notifyDiscord({ content: `🏷️ **TAG ADICIONADA**`, embeds: [{ title: `Tag: #${tagName}`, color: 15105570, fields: [{ name: "Conta", value: m.metaDesc, inline: true }, { name: "Cliente", value: m.cliente, inline: true }] }] }); 
+            }
+            await updateDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', metaId), { appliedTags: tags });
+        };
+
+        window.doUpdate = async (id) => {
+            const data = { nick: document.getElementById('edit-nick').value, tag: document.getElementById('edit-tag').value, email: document.getElementById('edit-email').value, metaDesc: document.getElementById('edit-meta').value, valor: document.getElementById('edit-valor').value, pedido: document.getElementById('edit-pedido').value, aviso: document.getElementById('edit-aviso').value, iconTypes: state.selectedIcons };
+            await updateDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', id), data); closeModal();
+        };
+
+        window.doDelete = async (id, type) => {
+            const m = state.metas.find(x => x.id === id);
+            if(type === 'silent') await deleteDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', id));
+            else { 
+                await updateDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', id), { status: '❌ Cancelada' }); 
+                const msgLog = `❌ CANCELADO: [${m.email}] - Cli: ${m.cliente}`;
+                await addDoc(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'notificacoes'), { 
+                    msg: msgLog, lida: false, timestamp: Timestamp.now(), important: true, type: 'cancelado' 
+                });
+                notifyDiscord(generateDiscordEmbed("❌ SERVIÇO CANCELADO", 15158332, m)); 
+            }
+            closeModal();
+        };
+
+        window.permanentlyDelete = async (id) => { if(confirm("Apagar definitivamente?")) { await deleteDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', id)); closeModal(); } };
+        window.deleteHistorico = async (id) => { if(confirm("Apagar registro?")) await deleteDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'historico_servico', id)); };
+        window.closeModal = () => { document.getElementById('modal-container').classList.add('hidden'); document.body.classList.remove('modal-open'); };
+        window.toggleIconSelect = (icon) => { if(state.selectedIcons.includes(icon)) { if(state.selectedIcons.length > 1) state.selectedIcons = state.selectedIcons.filter(x => x !== icon); } else { state.selectedIcons.push(icon); } document.querySelectorAll('.icon-opt').forEach(btn => { btn.className = state.selectedIcons.includes(btn.dataset.val) ? "icon-opt p-4 rounded-xl border-2 flex items-center justify-center transition-all border-blue-600 bg-blue-50 scale-105 shadow-sm btn-active-anim" : "icon-opt p-4 rounded-xl border-2 flex items-center justify-center border-slate-100 bg-slate-50 opacity-30 btn-active-anim"; }); };
+        window.showToast = (msg) => { const t = document.getElementById('toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2000); };
+        window.copyToClipboard = (text) => { const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast("Copiado!"); };
+        window.openRoyaleApi = (tag) => window.open(`${state.config.royaleApiUrl}${tag.replace('#', '')}`, '_blank');
+        window.toggleCardRaw = (id) => document.getElementById(`raw-${id}`).classList.toggle('hidden');
+        window.toggleTagPicker = (id) => document.getElementById(`tag-picker-${id}`).classList.toggle('hidden');
+        window.markAsRead = async (id) => await updateDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'notificacoes', id), { lida: true });
+        window.deleteNotif = async (id) => await deleteDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'notificacoes', id));
+        window.clearAllNotifs = async () => state.notificacoes.forEach(n => !n.lida && markAsRead(n.id));
+        window.confirmRemoval = (id) => openModal('removal', id);
+        window.updateDeadline = async (id) => { const d = document.getElementById('new-deadline').value; if(!d) return; await updateDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', id), { createdAt: Timestamp.fromDate(new Date(d)) }); closeModal(); };
+        window.saveTag = async () => { const name = document.getElementById('new-tag-input').value; if(!name) return; await addDoc(collection(db, 'artifacts', DATA_ID, 'public', 'data', 'tags'), { name }); document.getElementById('new-tag-input').value = ''; };
+        window.deleteTag = async (id) => await deleteDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'tags', id));
+        window.saveAllConfigs = async () => { await setDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'config', 'general'), { royaleApiUrl: document.getElementById('api-url-input').value, discordWebhook: document.getElementById('discord-url-input').value }, { merge: true }); alert("Ajustes Salvos!"); };
+        window.moveItem = (idx, dir) => { const list = state.metas.filter(m => m.status !== '✅ Concluído' && m.status !== '❌ Cancelada'); if((idx === 0 && dir === -1) || (idx === list.length-1 && dir === 1)) return; const temp = list[idx]; list[idx] = list[idx + dir]; list[idx + dir] = temp; state.metas = state.metas.map(m => list.includes(m) ? list[list.indexOf(m)] : m); render(); };
+        window.confirmOrder = async () => { const list = state.metas.filter(m => m.status !== '✅ Concluído' && m.status !== '❌ Cancelada'); const batch = writeBatch(db); list.forEach((m, i) => batch.update(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', m.id), { sortOrder: i })); await batch.commit(); changeView('admin'); };
+        window.reactivateMeta = async (id) => { await updateDoc(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', id), { status: '⏱️ Aguardando' }); };
+        window.confirmCleanup = (type) => { openModal('cleanup', type); };
+        window.doCleanup = async (type) => { const batch = writeBatch(db); if(type === 'notificacoes_lidas') state.notificacoes.filter(n => n.lida).forEach(n => batch.delete(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'notificacoes', n.id))); else if(type === 'historico') state.historico.forEach(h => batch.delete(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'historico_servico', h.id))); else if(type === 'chats') state.metas.forEach(m => batch.update(doc(db, 'artifacts', DATA_ID, 'public', 'data', 'metas', m.id), { chat: [] })); await batch.commit(); showToast("Limpeza concluída!"); closeModal(); };
+
+        window.openModal = (type, targetId = null) => {
+            const modal = document.getElementById('modal-container'); let content = '';
+            if(type === 'register') {
+                state.selectedIcons = ['trophy'];
+                content = `<div class="bg-white w-full max-w-md rounded-[3rem] p-8 border border-slate-200 shadow-2xl overflow-y-auto max-h-[90vh]"><h3 class="text-3xl font-black mb-1 italic text-center uppercase text-slate-900 tracking-tighter">Registrar Meta</h3><p class="text-[10px] text-blue-600 mb-8 font-black uppercase text-center tracking-widest italic uppercase">Operations Manager</p><div class="space-y-4"><textarea id="reg-raw" class="w-full h-32 rounded-3xl p-5 text-xs font-mono outline-none shadow-sm" placeholder="Cole o registro completo da GGMAX..."></textarea><input type="text" id="reg-manual" class="w-full rounded-2xl p-4 text-xs font-bold shadow-sm outline-none" placeholder="Título da Meta (Manual)"><div class="grid grid-cols-4 gap-2"><button onclick="toggleIconSelect('trophy')" class="icon-opt p-4 rounded-xl border-2 border-blue-600 bg-blue-50 flex items-center justify-center btn-active-anim" data-val="trophy">${generateIconHtml('trophy')}</button><button onclick="toggleIconSelect('shield')" class="icon-opt p-4 rounded-xl border-2 border-slate-50 flex items-center justify-center opacity-30 btn-active-anim" data-val="shield">${generateIconHtml('shield')}</button><button onclick="toggleIconSelect('crown')" class="icon-opt p-4 rounded-xl border-2 border-slate-50 flex items-center justify-center opacity-30 btn-active-anim" data-val="crown">${generateIconHtml('crown')}</button><button onclick="toggleIconSelect('arrows')" class="icon-opt p-4 rounded-xl border-2 border-slate-50 flex items-center justify-center opacity-30 btn-active-anim" data-val="arrows">${generateIconHtml('arrows')}</button></div><input type="datetime-local" id="reg-date" class="w-full p-4 rounded-2xl text-xs font-bold shadow-sm text-slate-900"></div><div class="flex gap-4 mt-10"><button onclick="closeModal()" class="flex-1 py-4 font-black text-slate-400 uppercase text-[10px] btn-active-anim">SAIR</button><button onclick="doRegister()" class="flex-1 bg-[var(--royale-blue)] text-white py-4 rounded-[1.8rem] font-black shadow-lg uppercase text-[11px] italic btn-active-anim">LANÇAR</button></div></div>`;
+            } else if (type === 'edit') {
+                const m = state.metas.find(x => x.id === targetId); state.selectedIcons = m.iconTypes || ['trophy']; 
+                content = `<div class="bg-white w-full max-w-md rounded-[3rem] p-8 border border-slate-200 shadow-2xl overflow-y-auto max-h-[90vh]"><h3 class="text-xl font-black mb-1 italic text-center uppercase tracking-tighter text-slate-900">Editar Dados</h3><div class="space-y-3 mt-6"><label class="text-[9px] font-black text-slate-400 uppercase ml-2 italic">Identificação Visual</label><div class="grid grid-cols-4 gap-2 mb-4"><button onclick="toggleIconSelect('trophy')" class="icon-opt p-4 rounded-xl border-2 flex items-center justify-center btn-active-anim ${state.selectedIcons.includes('trophy') ? 'border-blue-600 bg-blue-50' : 'border-slate-50 opacity-30'}" data-val="trophy">${generateIconHtml('trophy')}</button><button onclick="toggleIconSelect('shield')" class="icon-opt p-4 rounded-xl border-2 flex items-center justify-center btn-active-anim ${state.selectedIcons.includes('shield') ? 'border-blue-600 bg-blue-50' : 'border-slate-50 opacity-30'}" data-val="shield">${generateIconHtml('shield')}</button><button onclick="toggleIconSelect('crown')" class="icon-opt p-4 rounded-xl border-2 flex items-center justify-center btn-active-anim ${state.selectedIcons.includes('crown') ? 'border-blue-600 bg-blue-50' : 'border-slate-50 opacity-30'}" data-val="crown">${generateIconHtml('crown')}</button><button onclick="toggleIconSelect('arrows')" class="icon-opt p-4 rounded-xl border-2 flex items-center justify-center btn-active-anim ${state.selectedIcons.includes('arrows') ? 'border-blue-600 bg-blue-50' : 'border-slate-50 opacity-30'}" data-val="arrows">${generateIconHtml('arrows')}</button></div><div class="grid grid-cols-2 gap-3"><input type="text" id="edit-nick" class="w-full rounded-xl p-3 text-xs font-bold shadow-sm" value="${m.nick || ''}"><input type="text" id="edit-tag" class="w-full rounded-xl p-3 text-xs font-bold shadow-sm" value="${m.tag || ''}"></div><input type="text" id="edit-email" class="w-full rounded-xl p-3 text-xs font-bold shadow-sm" value="${m.email || ''}"><input type="text" id="edit-meta" class="w-full rounded-xl p-3 text-xs font-bold shadow-sm" value="${m.metaDesc || ''}"><div class="grid grid-cols-2 gap-3"><input type="text" id="edit-valor" class="w-full rounded-xl p-3 text-xs font-bold shadow-sm" value="${m.valor || ''}"><input type="text" id="edit-pedido" class="w-full rounded-xl p-3 text-xs font-bold shadow-sm" value="${m.pedido || ''}"></div><input type="text" id="edit-aviso" class="w-full rounded-xl p-3 text-xs font-bold text-rose-600 shadow-sm" value="${m.aviso || ''}"></div><div class="flex gap-4 mt-8"><button onclick="closeModal()" class="flex-1 py-4 font-black text-slate-400 text-[10px] uppercase btn-active-anim">VOLTAR</button><button onclick="doUpdate('${m.id}')" class="flex-1 bg-[var(--royale-blue)] text-white py-4 rounded-[1.8rem] font-black shadow-xl italic uppercase text-[11px] btn-active-anim">SALVAR</button></div></div>`;
+            } else if (type === 'cleanup') {
+                content = `<div class="bg-white w-full max-w-xs rounded-[2rem] p-8 border border-slate-200 text-center shadow-2xl"><h3 class="text-xl font-black mb-2 italic uppercase tracking-tighter text-rose-600">Limpeza</h3><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Ação irreversível. Confirmar?</p><div class="space-y-3 mt-8"><button onclick="doCleanup('${targetId}')" class="w-full bg-rose-600 text-white py-4 rounded-[2rem] font-black text-[10px] uppercase btn-active-anim">CONFIRMAR</button><button onclick="closeModal()" class="w-full py-2 text-[9px] font-black uppercase text-slate-400 mt-2 btn-active-anim">CANCELAR</button></div></div>`;
+            } else if (type === 'removal') {
+                content = `<div class="bg-white w-full max-w-xs rounded-[2rem] p-8 border border-slate-200 text-center shadow-2xl"><h3 class="text-xl font-black mb-2 italic uppercase text-slate-900">Remover</h3><div class="space-y-3 mt-8"><button onclick="doDelete('${targetId}', 'cancel')" class="w-full bg-rose-600 text-white py-4 rounded-[2rem] font-black text-[10px] uppercase btn-active-anim">CANCELAR META</button><button onclick="doDelete('${targetId}', 'silent')" class="w-full bg-slate-100 text-slate-400 py-4 rounded-[2rem] font-black text-[10px] uppercase btn-active-anim">APAGAR REGISTRO</button><button onclick="closeModal()" class="w-full py-2 text-[9px] font-black uppercase text-slate-400 mt-2 btn-active-anim">VOLTAR</button></div></div>`;
+            } else if (type === 'deadline') {
+                content = `<div class="bg-white w-full max-w-xs rounded-[2rem] p-8 border border-slate-200 text-center shadow-2xl">
+                    <h3 class="text-lg font-black mb-6 uppercase italic text-slate-900">Ajustar Tempo</h3>
+                    <input type="datetime-local" id="new-deadline" class="w-full p-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-900 mb-6" style="color: #1e293b !important;">
+                    <div class="flex gap-3">
+                        <button onclick="closeModal()" class="flex-1 py-4 font-black text-slate-400 uppercase text-[10px] btn-active-anim">VOLTAR</button>
+                        <button onclick="updateDeadline('${targetId}')" class="flex-1 bg-[var(--royale-blue)] text-white py-4 rounded-[1.2rem] font-black uppercase text-xs btn-active-anim shadow-lg">CONFIRMAR</button>
+                    </div>
+                </div>`;
+            }
+            modal.innerHTML = content; modal.classList.remove('hidden'); document.body.classList.add('modal-open');
+        };
+
+        document.getElementById('btn-login').addEventListener('click', async () => {
+            const e = document.getElementById('input-email').value; const p = document.getElementById('input-password').value;
+            try { await signInWithEmailAndPassword(auth, e, p); } catch(err) { document.getElementById('login-error').classList.remove('hidden'); }
+        });
+    </script>
+</body>
+</html>
